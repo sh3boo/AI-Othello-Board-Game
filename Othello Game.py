@@ -39,6 +39,9 @@ def loadSpriteSheet(sheet, row, col, new_size, size):
     image.set_colorkey('Black')
     return image
 
+
+# Adequate Utility Function : 
+# calculates the score of each player based on the current state of the game grid
 def calculateScore(grid, player):
     calculatedScore = 0
     for y, row in enumerate(grid):
@@ -46,7 +49,11 @@ def calculateScore(grid, player):
             calculatedScore -= col
     return calculatedScore
 
-#  Classes
+#Game Controller 
+#serves as the game controller. It organizes the game by handling user input, 
+# updating the game state, rendering the game on the screen,
+# and controlling the flow of the game
+
 class mainGameClass:
     def __init__(self):
         pygame.init()
@@ -55,16 +62,11 @@ class mainGameClass:
 
         self.firstPlayer = 1
         self.secondPlayer = -1
-
         self.currPlayer = 1
-
         self.time = 0
-
         self.rows = 8
         self.cols = 8
-
         self.endGame = True
-
         self.grid = Grid(self.rows, self.cols, (80, 80), self)
         self.AI_Player = ComputerPlayer(self.grid)
 
@@ -86,7 +88,8 @@ class mainGameClass:
                 #If the right mouse button (button 3) is clicked
                 #if event.button == 3:
                     #self.grid.printGameLogicBoard()
-#If the right mouse button (button 1) is clicked
+                    
+                #If the right mouse button (button 1) is clicked
                 if event.button == 1 :
                     if self.currPlayer == 1 and not self.endGame:
                         #retrieves the grid coordinates based on the mouse position
@@ -123,7 +126,7 @@ class mainGameClass:
                 if not self.grid.availableMoves(self.grid.gridLogic, self.currPlayer):
                     self.endGame = True
                     return
-                cell, score = self.AI_Player.computerHard(self.grid.gridLogic, 5, -64, 64, -1)
+                cell, score = self.AI_Player.findBestMoveWithAlphaBeta(self.grid.gridLogic, 5, -64, 64, -1)
                 self.grid.addCurPlayerToken(self.grid.gridLogic, self.currPlayer, cell[0], cell[1])
                 swappableTiles = self.grid.swappableTiles(cell[0], cell[1], self.grid.gridLogic, self.currPlayer)
                 for tile in swappableTiles:
@@ -144,22 +147,23 @@ class mainGameClass:
         self.grid.drawGrid(self.screen)
         pygame.display.update()
 
+
+# Knowledge Representation of Game State
 class Grid:
     def __init__(self, rows, cols, size, main):
         self.GAME = main
         self.y = rows
         self.x = cols
         self.size = size
-        self.whiteToken = loadScaledImage('assets/WhiteToken.png', size)
-        self.blackToken = loadScaledImage('assets/BlackToken.png', size)
-        self.transitionWhiteToBlack = [loadScaledImage(f'assets/BlackToWhite{i}.png', self.size) for i in range(1, 4)]
-        self.transitionBlackToWhite = [loadScaledImage(f'assets/WhiteToBlack{i}.png', self.size) for i in range(1, 4)]
+
+        self.white = loadScaledImage('photos/white.png', size)
+        self.black = loadScaledImage('photos/black.png', size)
+        self.whiteToBlack = [loadScaledImage(f'photos/BlackToWhite{i}.png', self.size) for i in range(1, 4)]
+        self.blackToWhite = [loadScaledImage(f'photos/WhiteToBlack{i}.png', self.size) for i in range(1, 4)]
         self.bg = self.loadBackgroundImage()
 
         self.tokens = {}
-
         self.gridBackground = self.createBackgroundImage()
-
         self.gridLogic = self.regenGrid(self.y, self.x)
 
         self.firstPlayerScore = 0
@@ -173,7 +177,7 @@ class Grid:
 
     def loadBackgroundImage(self):
         alpha = 'ABCDEFGHI'
-        spriteSheet = pygame.image.load('assets/wood.png').convert_alpha()
+        spriteSheet = pygame.image.load('photos/backGround.png').convert_alpha()
         imageDict = {}
         for i in range(3):
             for j in range(7):
@@ -333,15 +337,15 @@ class Grid:
         return availableToChooseCells
 
     def addCurPlayerToken(self, grid, curPlayer, y, x):
-        curPlayerTokenImage = self.whiteToken if curPlayer == 1 else self.blackToken
+        curPlayerTokenImage = self.white if curPlayer == 1 else self.black
         self.tokens[(y, x)] = Token(curPlayer, y, x, curPlayerTokenImage, self.GAME)
         grid[y][x] = self.tokens[(y, x)].player
 
     def transition(self, cell, player):
         if player == 1:
-            self.tokens[(cell[0], cell[1])].transition(self.transitionWhiteToBlack, self.whiteToken)
+            self.tokens[(cell[0], cell[1])].transition(self.whiteToBlack, self.white)
         else:
-            self.tokens[(cell[0], cell[1])].transition(self.transitionBlackToWhite, self.blackToken)
+            self.tokens[(cell[0], cell[1])].transition(self.blackToWhite, self.black)
 
 class Token:
     def __init__(self, player, gridX, gridY, image, main):
@@ -367,7 +371,10 @@ class ComputerPlayer:
     def __init__(self, grid_object):
         self.grid = grid_object
 
-    def computerHard(self, grid, depth, alpha, beta, player):
+# Alpha-Beta Pruning Algorithm Implementation
+
+# Support for Different Difficulty Levels:
+    def findBestMoveWithAlphaBeta(self, grid, depth, alpha, beta, player):
         tempGrid = copy.deepcopy(grid)
         availableMoves = self.grid.availableMoves(tempGrid, player)
 
@@ -386,7 +393,7 @@ class ComputerPlayer:
                 for tile in swappableTiles:
                     tempGrid[tile[0]][tile[1]] = player
 
-                b_move, value = self.computerHard(tempGrid, depth-1, alpha, beta, player *-1)
+                b_move, value = self.findBestMoveWithAlphaBeta(tempGrid, depth-1, alpha, beta, player *-1)
 
                 if value > highestScore:
                     highestScore = value
@@ -409,7 +416,7 @@ class ComputerPlayer:
                 for tile in swappableTiles:
                     tempGrid[tile[0]][tile[1]] = player
 
-                b_move, value = self.computerHard(tempGrid, depth-1, alpha, beta, player)
+                b_move, value = self.findBestMoveWithAlphaBeta(tempGrid, depth-1, alpha, beta, player)
 
                 if value < highestScore:
                     highestScore = value
