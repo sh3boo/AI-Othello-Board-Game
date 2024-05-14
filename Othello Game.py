@@ -1,5 +1,4 @@
 import pygame
-
 import copy
 
 
@@ -25,11 +24,11 @@ class Grid:
         self.secondPlayerScore = 0
 
         self.font = pygame.font.SysFont('Arial', 20, True, False)
-
+#set game state to its initial state
     def startNewGame(self):
         self.tokens.clear()
         self.gridLogic = self.regenGrid(self.y, self.x)
-
+#put background image into a dictionary to load it when render the game
     def loadBackgroundImage(self):
         alpha = 'ABCDEFGHI'
         spriteSheet = pygame.image.load('photos/backGround.png').convert_alpha()
@@ -57,7 +56,7 @@ class Grid:
             for i, img in enumerate(row):
                 image.blit(self.bg[img], (i * self.size[0], j * self.size[1]))
         return image
-
+#set the initial game state by creating an empty grid and adding the four starting tokens.
     def regenGrid(self, rows, cols):
         grid = []
         for y in range(rows):
@@ -71,7 +70,7 @@ class Grid:
         self.addCurPlayerToken(grid, -1, 4, 3)
 
         return grid
-
+#the score of the player on a specific state of the board
     def calcPlyerScore(self, player):
         score = 0
         for row in self.gridLogic:
@@ -81,7 +80,7 @@ class Grid:
         return score
 
     def drawScore(self, curPlayer, playerScore):
-        textImage = self.font.render(f'{curPlayer} : {playerScore}', 1, 'White')
+        textImage = self.font.render(f'{curPlayer} : {playerScore}', 1, 'white')
         return textImage
 
     def endGameScreen(self):
@@ -94,12 +93,13 @@ class Grid:
             finishGameScreen.blit(newRoundMessage, (85, 190))
         return finishGameScreen
 
-
+#drawing the background, displaying the current score rendering player tokens 
+#highlighting available moves and showing the end game screen
     def drawGrid(self, window):
         window.blit(self.gridBackground, (0, 0))
-
-        window.blit(self.drawScore('Computer Player', self.firstPlayerScore), (900, 300))
-        window.blit(self.drawScore('You', self.secondPlayerScore), (900, 400))
+        window.blit(self.font.render(f'CURRENT SCORE', 1, 'red'), (900, 200))
+        window.blit(self.drawScore('You', self.firstPlayerScore), (900, 300))
+        window.blit(self.drawScore('Computer Player', self.secondPlayerScore), (900, 400))
 
         for token in self.tokens.values():
             token.renderGameOnScreen(window)
@@ -112,14 +112,22 @@ class Grid:
         if self.GAME.endGame:
             window.blit(self.endGameScreen(), (240, 240))
 
-    """def printGameLogicBoard(self):
-        print('  | A | B | C | D | E | F | G | H |')
-        for i, row in enumerate(self.gridLogic):
-            line = f'{i} |'.ljust(3, " ")
-            for item in row:
-                line += f"{item}".center(3, " ") + '|'
-            print(line)
-        print()"""
+    def availableMoves(self, grid, currPlayer):
+
+        availableMOvesCells = self.determineAvailCells(grid, currPlayer)
+        availableToChooseCells = []
+
+        for cell in availableMOvesCells:
+            x, y = cell
+            if cell in availableToChooseCells:
+                continue
+            changeTiles = self.swappableTiles(x, y, grid, currPlayer)
+
+            if len(changeTiles) > 0:
+                availableToChooseCells.append(cell)
+
+        return availableToChooseCells
+    
 
     def determineAvailCells(self, grid, curPlayer):
         availCellsToMove = []
@@ -141,7 +149,8 @@ class Grid:
 
                     availCellsToMove.append((gridX, gridY))
         return availCellsToMove
-
+# this function returns the list of swappable tiles, which are the tiles that will be 
+#flipped if the current player places their token at position (x, y)
     def swappableTiles(self, x, y, grid, player):
         availableCells = directions(x, y)
         if len(availableCells) == 0:
@@ -175,21 +184,7 @@ class Grid:
 
         return swappableTiles
 
-    def availableMoves(self, grid, currPlayer):
 
-        availableMOvesCells = self.determineAvailCells(grid, currPlayer)
-        availableToChooseCells = []
-
-        for cell in availableMOvesCells:
-            x, y = cell
-            if cell in availableToChooseCells:
-                continue
-            changeTiles = self.swappableTiles(x, y, grid, currPlayer)
-
-            if len(changeTiles) > 0:
-                availableToChooseCells.append(cell)
-
-        return availableToChooseCells
 
     def addCurPlayerToken(self, grid, curPlayer, y, x):
         curPlayerTokenImage = self.white if curPlayer == 1 else self.black
