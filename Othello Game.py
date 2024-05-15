@@ -121,7 +121,7 @@ class Grid:
             x, y = cell
             if cell in availableToChooseCells:
                 continue
-            changeTiles = self.swappableTiles(x, y, grid, currPlayer)
+            changeTiles = self.ChangableTiles(x, y, grid, currPlayer)
 
             if len(changeTiles) > 0:
                 availableToChooseCells.append(cell)
@@ -151,12 +151,12 @@ class Grid:
         return availCellsToMove
 # this function returns the list of swappable tiles, which are the tiles that will be 
 #flipped if the current player places their token at position (x, y)
-    def swappableTiles(self, x, y, grid, player):
+    def ChangableTiles(self, x, y, grid, player):
         availableCells = directions(x, y)
         if len(availableCells) == 0:
             return []
 
-        swappableTiles = []
+        ChangableTiles = []
         for availablecell in availableCells:
             check_x, check_y = availablecell
             dif_x, dif_y = check_x - x, check_y - y
@@ -180,9 +180,9 @@ class Grid:
                     RUN = False
 
             if len(current_line) > 0:
-                swappableTiles.extend(current_line)
+                ChangableTiles.extend(current_line)
 
-        return swappableTiles
+        return ChangableTiles
 
 
 
@@ -221,27 +221,25 @@ class Token:
 #  utility functions
 def directions(x, y, minX=0, minY=0, maxX=7, maxY=7):
     """Check to determine which directions are valid from current cell"""
-    AvailableDirectuions = []
-    # left 
-    if x != minX: AvailableDirectuions.append((x-1, y))
-    # left and down directions 
-    if x != minX and y != minY: AvailableDirectuions.append((x-1, y-1))
-    # left and up directions
-    if x != minX and y != maxY: AvailableDirectuions.append((x-1, y+1))
+    AvailableDirections = []
+
+    # left
+    if x != minX:
+        AvailableDirections.append((x - 1, y))
 
     # right
-    if x!= maxX: AvailableDirectuions.append((x+1, y))
-    # right and down directions
-    if x != maxX and y != minY: AvailableDirectuions.append((x+1, y-1))
-    # right and up directions
-    if x != maxX and y != maxY: AvailableDirectuions.append((x+1, y+1))
+    if x != maxX:
+        AvailableDirections.append((x + 1, y))
 
-    # down direction 
-    if y != minY: AvailableDirectuions.append((x, y-1))
-    # up direction 
-    if y != maxY: AvailableDirectuions.append((x, y+1))
+    # down direction
+    if y != minY:
+        AvailableDirections.append((x, y - 1))
 
-    return AvailableDirectuions
+    # up direction
+    if y != maxY:
+        AvailableDirections.append((x, y + 1))
+
+    return AvailableDirections
 
 def loadScaledImage(path, size):
     img = pygame.image.load(f"{path}").convert_alpha()
@@ -269,15 +267,14 @@ def calculateScore(grid, player):
 #serves as the game controller. It organizes the game by handling user input, 
 # updating the game state, rendering the game on the screen,
 # and controlling the flow of the game
-
 class mainGameClass:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((1200, 800))
         pygame.display.set_caption('Othello Game')
 
-        self.firstPlayer = 1
-        self.secondPlayer = -1
+        self.firstPlayer = 1 # you  
+        self.secondPlayer = -1 # the computer 
         self.currPlayer = 1
         self.time = 0
         self.rows = 8
@@ -287,6 +284,7 @@ class mainGameClass:
         self.AI_Player = ComputerPlayer(self.grid)
 
         self.Run = True
+        self.difficulty = "medium"  # Default difficulty is set to medium 
 
     def runGame(self):
         while self.Run:
@@ -296,73 +294,65 @@ class mainGameClass:
 
     def handleUserInput(self):
         for event in pygame.event.get():
-
+            # Check if the user quits the game
             if event.type == pygame.QUIT:
                 self.Run = False
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                #If the right mouse button (button 3) is clicked
-                #if event.button == 3:
-                    #self.grid.printGameLogicBoard()
-                    
-                #If the right mouse button (button 1) is clicked
-                if event.button == 1 :
+                # Left mouse button (button 1) is clicked
+                if event.button == 1:
                     if self.currPlayer == 1 and not self.endGame:
-                        #retrieves the grid coordinates based on the mouse position
                         x, y = pygame.mouse.get_pos()
                         x, y = (x - 80) // 80, (y - 80) // 80
-                        availableMOvesCells = self.grid.availableMoves(self.grid.gridLogic, self.currPlayer)
-                        #checks if the clicked cell is in the list of valid cells.
-                        if not availableMOvesCells:
+                        availableMovesCells = self.grid.availableMoves(self.grid.gridLogic, self.currPlayer)
+                        if not availableMovesCells:
                             pass
-                        #If it is, it inserts a token
                         else:
-                            if (y, x) in availableMOvesCells:
+                            if (y, x) in availableMovesCells:
                                 self.grid.addCurPlayerToken(self.grid.gridLogic, self.currPlayer, y, x)
-                                swappableTiles = self.grid.swappableTiles(y, x, self.grid.gridLogic, self.currPlayer)
-                                for tile in swappableTiles:
+                                ChangableTiles = self.grid.ChangableTiles(y, x, self.grid.gridLogic, self.currPlayer)
+                                for tile in ChangableTiles:
                                     self.grid.transition(tile, self.currPlayer)
                                     self.grid.gridLogic[tile[0]][tile[1]] *= -1
                                 self.currPlayer *= -1
                                 self.time = pygame.time.get_ticks()
-#if the game is over, it checks if the clicked position is within the specified range
-#for the "Play Again" button
                     if self.endGame:
                         x, y = pygame.mouse.get_pos()
                         if x >= 320 and x <= 480 and y >= 400 and y <= 480:
                             self.grid.startNewGame()
                             self.endGame = False
 
-#update the game state based on the current player's turn
     def updateGameState(self):
         if self.currPlayer == -1:
             new_time = pygame.time.get_ticks()
-            #just to simulate a delay between the player's move and the computer's move.
-            if new_time - self.time >= 100:#if time passed with no available moves end game
+            if new_time - self.time >= 100:
                 if not self.grid.availableMoves(self.grid.gridLogic, self.currPlayer):
                     self.endGame = True
                     return
-                cell, score = self.AI_Player.findBestMoveWithAlphaBeta(self.grid.gridLogic, 5, -64, 64, -1)
+                # Adjust depth based on difficulty level
+                if self.difficulty == "easy":
+                    depth = 1
+                elif self.difficulty == "medium":
+                    depth = 4
+                elif self.difficulty == "hard":
+                    depth = 7
+                cell, score = self.AI_Player.findBestMoveWithAlphaBeta(self.grid.gridLogic, depth, -64, 64, -1)
                 self.grid.addCurPlayerToken(self.grid.gridLogic, self.currPlayer, cell[0], cell[1])
-                swappableTiles = self.grid.swappableTiles(cell[0], cell[1], self.grid.gridLogic, self.currPlayer)
-                for tile in swappableTiles:
+                ChangableTiles = self.grid.ChangableTiles(cell[0], cell[1], self.grid.gridLogic, self.currPlayer)
+                for tile in ChangableTiles:
                     self.grid.transition(tile, self.currPlayer)
                     self.grid.gridLogic[tile[0]][tile[1]] *= -1
                 self.currPlayer *= -1
-#updates the scores for both players based on the current state of the game grid
         self.grid.firstPlayerScore = self.grid.calcPlyerScore(self.firstPlayer)
         self.grid.secondPlayerScore = self.grid.calcPlyerScore(self.secondPlayer)
-        #if there are not any available moves for the current player end the game and return
         if not self.grid.availableMoves(self.grid.gridLogic, self.currPlayer):
             self.endGame = True
             return
-
 
     def renderGameOnScreen(self):
         self.screen.fill((0, 0, 0))
         self.grid.drawGrid(self.screen)
         pygame.display.update()
-
 
 
 
@@ -387,9 +377,9 @@ class ComputerPlayer:
 
             for move in availableMoves:
                 x, y = move
-                swappableTiles = self.grid.swappableTiles(x, y, tempGrid, player)
+                ChangableTiles = self.grid.ChangableTiles(x, y, tempGrid, player)
                 tempGrid[x][y] = player
-                for tile in swappableTiles:
+                for tile in ChangableTiles:
                     tempGrid[tile[0]][tile[1]] = player
 
                 b_move, value = self.findBestMoveWithAlphaBeta(tempGrid, depth-1, alpha, beta, player *-1)
@@ -410,9 +400,9 @@ class ComputerPlayer:
 
             for move in availableMoves:
                 x, y = move
-                swappableTiles = self.grid.swappableTiles(x, y, tempGrid, player)
+                ChangableTiles = self.grid.ChangableTiles(x, y, tempGrid, player)
                 tempGrid[x][y] = player
-                for tile in swappableTiles:
+                for tile in ChangableTiles:
                     tempGrid[tile[0]][tile[1]] = player
 
                 b_move, value = self.findBestMoveWithAlphaBeta(tempGrid, depth-1, alpha, beta, player)
