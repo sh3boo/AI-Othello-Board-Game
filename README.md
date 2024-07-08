@@ -11,7 +11,7 @@ Install Pygame:
 Open your terminal or command prompt and run:
 
 sh
-Copy code
+Copy code 
 pip install pygame
 Clone the Repository:
 
